@@ -19,15 +19,9 @@ import com.huawei.hihealthkit.data.HiHealthPointData;
 import com.huawei.hihealthkit.data.store.HiHealthDataStore;
 import com.huawei.hihealthkit.data.type.HiHealthPointType;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -69,19 +63,14 @@ public class MainActivity extends AppCompatActivity {
         public void onClick(View view) {
             int timeout = 0;
             // получаем время
-            LocalDateTime localDateTime = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
-            ZonedDateTime zoneTime = localDateTime.atZone(ZoneId.systemDefault());
-            long endTime = zoneTime.toInstant().toEpochMilli();
-            long startTime = 0;
+            long endTime = System.currentTimeMillis();
+            long startTime = getStartOfDay();
 
             long firstDayOfWeek = getFirstDayOfWeek(Calendar.DAY_OF_WEEK);
             long firstDayOfMonth = getFirstDayOfWeek(Calendar.DAY_OF_MONTH);
             long firstDayOfYear = getFirstDayOfWeek(Calendar.DAY_OF_YEAR);
 
             switch (radioGroup.getCheckedRadioButtonId()) {
-                case R.id.day:
-                    startTime = endTime - TimeUnit.DAYS.toMillis(1);
-                    break;
                 case R.id.week:
                     startTime = firstDayOfWeek;
                     break;
@@ -110,7 +99,6 @@ public class MainActivity extends AppCompatActivity {
                         for (HiHealthPointData pointData : dataList) {
                             steps += pointData.getValue();
                         }
-
                         result.setText(getString(R.string.steps, steps));
                     } else {
                         showErrorMessage(getString(R.string.data_type_step_count));
@@ -145,7 +133,9 @@ public class MainActivity extends AppCompatActivity {
             view -> HiHealthDataStore.getWeight(getApplicationContext(),
                     (code, weight) -> {
                         if (code == HiHealthError.SUCCESS) {
-                            result.setText("Weight: " + weight);
+                            if (weight instanceof Float) {
+                                result.setText(getString(R.string.weight, (Float) weight));
+                            }
                         } else {
                             showErrorMessage(getString(R.string.data_type_basic_measurement));
                         }
@@ -210,5 +200,14 @@ public class MainActivity extends AppCompatActivity {
             default:
                 return 0L;
         }
+    }
+
+    private long getStartOfDay() {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DATE);
+        calendar.set(year, month, day, 0, 0, 0);
+        return calendar.getTimeInMillis();
     }
 }
